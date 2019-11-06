@@ -28,6 +28,7 @@ class Extension(ext.Extension):
         schema['search_results'] = config.Integer(minimum=1)
         schema['playlist_max_videos'] = config.Integer(minimum=1)
         schema['api_enabled'] = config.Boolean()
+        schema['music_enabled'] = config.Boolean()
         return schema
 
     def setup(self, registry):

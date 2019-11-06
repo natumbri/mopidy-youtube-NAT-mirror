@@ -57,6 +57,7 @@ class YouTubeBackend(pykka.ThreadingActor, backend.Backend):
         youtube.Playlist.playlist_max_videos = \
             config['youtube']['playlist_max_videos']
         youtube.api_enabled = config['youtube']['api_enabled']
+        youtube.music_enabled = config['youtube']['music_enabled']
         self.uri_schemes = ['youtube', 'yt']
         self.user_agent = '%s/%s' % (
             Extension.dist_name,
@@ -89,6 +90,11 @@ class YouTubeBackend(pykka.ThreadingActor, backend.Backend):
         if youtube.api_enabled is False:
             logger.info('Using scrAPI')
             youtube.Entry.api = youtube.scrAPI(proxy, headers)
+
+        if youtube.music_enabled is True:
+            logger.info('Using YouTube Music API')
+            music = youtube.Music(proxy, headers)
+            youtube.Entry.api.search = music.search
 
         # logger.info('using jAPI')
         # youtube.Entry.api = youtube.jAPI()
