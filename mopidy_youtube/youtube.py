@@ -872,7 +872,7 @@ class Music(Client):
         return Music.api_key
 
     @classmethod
-    def base_search(cls, q, videos=True):
+    def base_search(cls, q, continuationToken=None, videos=True):
         searchHeaders = {
             'Referer': 'https://music.youtube.com/',
             'Content-Type': 'application/json',
@@ -885,6 +885,10 @@ class Music(Client):
             'alt': 'json',
             'key': cls.get_token(),
         }
+
+        if continuationToken:
+            query['cToken'] = continuationToken
+            query['continuation'] = continuationToken
 
         typeFilter = {
             'songs': 'Eg-KAQwIARAAGAAgACgAMABqChAJEAMQBBAKEAU%3D',
@@ -900,24 +904,49 @@ class Music(Client):
                     "gl": "US",
                 },
             },
-            "query": "blind guardian",
-            "params": typeFilter['songs'] if videos else typeFilter['albums']
         }
+
+        if not continuationToken:
+            data['query'] = q
+            data['params'] = typeFilter['songs'] if videos else typeFilter['albums']
 
         json_response = cls.session.post(
             Music.searchEndpoint, params=query, headers=searchHeaders, json=data)
 
-        result_json = json_response.json()['contents']['sectionListRenderer']['contents']
+        result_json = json_response.json()
+
+        results = None
+        if 'contents' in result_json:
+            results = result_json['contents']['sectionListRenderer']['contents']
+        elif 'continuationContents' in result_json:
+            results = result_json['continuationContents']
+
+        if not results:
+            return
 
         items = []
-        for content in result_json:
-            items.append(content['musicShelfRenderer']['contents'])
-
+        nextToken = None
+        if 'musicShelfContinuation' in results:
+            musicShelf = results['musicShelfContinuation']
+            items.append(musicShelf['contents'])
+            if 'continuations' in musicShelf:
+                nextToken = musicShelf['continuations'][0]['nextContinuationData']['continuation']
+        else:
+            for content in results:
+                musicShelf = content['musicShelfRenderer']
+                items.append(musicShelf['contents'])
+                if musicShelf['continuations']:
+                    nextToken = musicShelf['continuations'][0]['nextContinuationData']['continuation']
 
         normalized_items = []
         for thing in items:
             for x in thing:
                 normalized_items.append(x['musicResponsiveListItemRenderer'])
+
+        if nextToken:
+            values = cls.base_search(q, continuationToken=nextToken, videos=videos)
+            if values:
+                normalized_items += values
 
         return normalized_items
 
