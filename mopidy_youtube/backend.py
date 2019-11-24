@@ -19,6 +19,7 @@ from mopidy_youtube import Extension, logger, youtube
 import youtube_api
 import youtube_scrapi
 import youtube_bs4api
+import youtube_musicapi
 
 # A typical interaction:
 # 1. User searches for a keyword (YouTubeLibraryProvider.search)
@@ -61,6 +62,7 @@ class YouTubeBackend(pykka.ThreadingActor, backend.Backend):
         youtube.Playlist.playlist_max_videos = \
             config['youtube']['playlist_max_videos']
         youtube.api_enabled = config['youtube']['api_enabled']
+        youtube.music_enabled = config['youtube']['music_enabled']
         self.uri_schemes = ['youtube', 'yt']
         self.user_agent = '%s/%s' % (
             Extension.dist_name,
@@ -98,6 +100,11 @@ class YouTubeBackend(pykka.ThreadingActor, backend.Backend):
             # beautiful soup 4 based api
             logger.info('using bs4API')
             youtube.Entry.api = youtube_bs4api.bs4API(proxy, headers)
+
+        if youtube.music_enabled is True:
+            logger.info('Using YouTube Music API')
+            music = youtube_musicapi.Music(proxy, headers)
+            youtube.Entry.api.search = music.search
 
 
 class YouTubeLibraryProvider(backend.LibraryProvider):

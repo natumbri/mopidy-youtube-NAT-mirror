@@ -146,7 +146,7 @@ class Entry(object):
             elif k == 'title':
                 val = item['snippet']['title']
             elif k == 'channel':
-                val = item['snippet']['channelTitle']
+                val = item['snippet']['channelTitle'] if 'channelTitle' in item['snippet'] else item['snippet']['title']
             elif k == 'length':
                 # convert PT1H2M10S to 3730
                 m = re.search(r'P((?P<weeks>\d+)W)?'
