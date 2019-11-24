@@ -3,8 +3,6 @@
 import json
 import re
 
-from bs4 import BeautifulSoup
-
 from mopidy_youtube import logger
 
 from youtube import Client, Video
