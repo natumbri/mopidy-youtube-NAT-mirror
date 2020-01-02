@@ -2,8 +2,8 @@ import json
 import re
 
 from mopidy_youtube import logger
+from mopidy_youtube.youtube import Client, Video
 
-from youtube import Client, Video
 
 # Direct access to YouTube Music API
 #
