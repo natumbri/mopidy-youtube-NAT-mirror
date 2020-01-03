@@ -24,9 +24,9 @@ class Music(Client):
                 "Accept-Language": "en;q=0.5",
                 "content_type": "application/json",
             }
-
+            logger.info('triggered session.get for api_key')
             response = cls.session.get(Music.endpoint, headers=headers)
-
+            
             json_regex = r"ytcfg.set\((.*?)\);"
             extracted_json = re.search(json_regex, response.text).group(1)
 
@@ -112,7 +112,7 @@ class Music(Client):
             for x in thing:
                 normalized_items.append(x["musicResponsiveListItemRenderer"])
 
-        if nextToken:
+        if nextToken and len(normalized_items) < Video.search_results:
             values = cls.base_search(
                 q, continuationToken=nextToken, videos=videos
             )
@@ -139,7 +139,7 @@ class Music(Client):
                     #     'duration': 'PT'+duration
                     # }
                     "snippet": {
-                        "title": item["flexColumns"][1][
+                        "channelTitle": item["flexColumns"][1][
                             "musicResponsiveListItemFlexColumnRenderer"
                         ]["text"]["runs"][0][
                             "text"
@@ -149,7 +149,7 @@ class Music(Client):
                                 "musicThumbnailRenderer"
                             ]["thumbnail"]["thumbnails"][0],
                         },
-                        "channelTitle": item["flexColumns"][0][
+                        "title": item["flexColumns"][0][
                             "musicResponsiveListItemFlexColumnRenderer"
                         ]["text"]["runs"][0][
                             "text"
@@ -199,9 +199,24 @@ class Music(Client):
 
     @classmethod
     def search(cls, q):
-        items = cls.search_albums(q) + cls.search_videos(q)
+        search_results = []
+        video_results = cls.search_albums(q)
+        [search_results.append(result) for result in video_results]
+        album_results = cls.search_videos(q)
+        [search_results.append(result) for result in album_results]
+
         return json.loads(
             json.dumps(
-                {"items": [i for i in items if i]}, sort_keys=False, indent=1
+                {
+                    "items": [
+                        x
+                        for _, x in zip(
+                            range(Video.search_results), search_results
+                        )
+                    ]
+                },
+                sort_keys=False,
+                indent=1,
             )
         )
+
